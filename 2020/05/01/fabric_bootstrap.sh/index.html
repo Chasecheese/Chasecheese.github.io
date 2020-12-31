@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="mx">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/fox.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/fox.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/fox.png">
+  <link rel="mask-icon" href="/images/fox.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="bootstrap.sh安装Hyperledger Fabric-samples在运行bootstrap.sh脚本安装HyperLedger Fabric-samples 和相关环境时，由于网络问题，进行了很多的手动下载和安装，所以，这次来分析一下这个脚本有哪些功能，做了哪几件事情。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Fabric 搭建环境 bootstrap.sh做了哪些工作？">
+<meta property="og:url" content="http://example.com/2020/05/01/fabric_bootstrap.sh/index.html">
+<meta property="og:site_name" content="Mingxin&#39;s Blog">
+<meta property="og:description" content="bootstrap.sh安装Hyperledger Fabric-samples在运行bootstrap.sh脚本安装HyperLedger Fabric-samples 和相关环境时，由于网络问题，进行了很多的手动下载和安装，所以，这次来分析一下这个脚本有哪些功能，做了哪几件事情。">
+<meta property="og:locale">
+<meta property="article:published_time" content="2020-05-01T04:04:21.000Z">
+<meta property="article:modified_time" content="2020-05-01T04:16:30.177Z">
+<meta property="article:author" content="李明鑫">
+<meta property="article:tag" content="Hyperledger">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2020/05/01/fabric_bootstrap.sh/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'mx'
+  };
+</script>
+
+  <title>Fabric 搭建环境 bootstrap.sh做了哪些工作？ | Mingxin's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Mingxin's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Stay Hungry, Stay Foolish.</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="mx">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/05/01/fabric_bootstrap.sh/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/fox.png">
+      <meta itemprop="name" content="李明鑫">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Mingxin's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Fabric 搭建环境 bootstrap.sh做了哪些工作？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-01 12:04:21 / 修改时间：12:16:30" itemprop="dateCreated datePublished" datetime="2020-05-01T12:04:21+08:00">2020-05-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Hyperledger/" itemprop="url" rel="index"><span itemprop="name">Hyperledger</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2020/05/01/fabric_bootstrap.sh/" class="post-meta-item leancloud_visitors" data-flag-title="Fabric 搭建环境 bootstrap.sh做了哪些工作？" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2020/05/01/fabric_bootstrap.sh/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2020/05/01/fabric_bootstrap.sh/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="bootstrap-sh安装Hyperledger-Fabric-samples"><a href="#bootstrap-sh安装Hyperledger-Fabric-samples" class="headerlink" title="bootstrap.sh安装Hyperledger Fabric-samples"></a>bootstrap.sh安装Hyperledger Fabric-samples</h1><p>在运行<strong>bootstrap.sh</strong>脚本安装HyperLedger Fabric-samples 和相关环境时，由于网络问题，进行了很多的手动下载和安装，所以，这次来分析一下这个脚本有哪些功能，做了哪几件事情。</p>
+<a id="more"></a>
+
+
+<h1 id="主要安装部分："><a href="#主要安装部分：" class="headerlink" title="主要安装部分："></a>主要安装部分：</h1><p><em>除了一些版本tag的检查外，这个脚本主要运行了这三大部分功能：除了一些版本tag的检查外，这个脚本主要运行了这三大部分功能：</em></p>
+<h2 id="第一部分，下载fabric-samples的仓库："><a href="#第一部分，下载fabric-samples的仓库：" class="headerlink" title="第一部分，下载fabric-samples的仓库："></a>第一部分，下载fabric-samples的仓库：</h2><p>这一步没有出现什么问题，很快就下载好了，这时，bootstrap.sh所在的目录下会出现一个fabric-samples文件夹</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">cloneSamplesRepo</span></span>() &#123;</span><br><span class="line">    <span class="comment"># clone (if needed) hyperledger/fabric-samples and checkout corresponding</span></span><br><span class="line">    <span class="comment"># version to the binaries and docker images to be downloaded</span></span><br><span class="line">    <span class="keyword">if</span> [ -d first-network ]; <span class="keyword">then</span></span><br><span class="line">        <span class="comment"># if we are in the fabric-samples repo, checkout corresponding version</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;===&gt; Checking out v<span class="variable">$&#123;VERSION&#125;</span> of hyperledger/fabric-samples&quot;</span></span><br><span class="line">        git checkout v<span class="variable">$&#123;VERSION&#125;</span></span><br><span class="line">    <span class="keyword">elif</span> [ -d fabric-samples ]; <span class="keyword">then</span></span><br><span class="line">        <span class="comment"># if fabric-samples repo already cloned and in current directory,</span></span><br><span class="line">        <span class="comment"># cd fabric-samples and checkout corresponding version</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;===&gt; Checking out v<span class="variable">$&#123;VERSION&#125;</span> of hyperledger/fabric-samples&quot;</span></span><br><span class="line">        <span class="built_in">cd</span> fabric-samples &amp;&amp; git checkout v<span class="variable">$&#123;VERSION&#125;</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;===&gt; Cloning hyperledger/fabric-samples repo and checkout v<span class="variable">$&#123;VERSION&#125;</span>&quot;</span></span><br><span class="line">        git <span class="built_in">clone</span> -b master https://github.com/hyperledger/fabric-samples.git &amp;&amp; <span class="built_in">cd</span> fabric-samples &amp;&amp; git checkout v<span class="variable">$&#123;VERSION&#125;</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="第二部分，下载并安装最新版本的fabric和fabric-ca的二进制文件"><a href="#第二部分，下载并安装最新版本的fabric和fabric-ca的二进制文件" class="headerlink" title="第二部分，下载并安装最新版本的fabric和fabric-ca的二进制文件:"></a>第二部分，下载并安装最新版本的fabric和fabric-ca的二进制文件:</h2><p>此处，两个二进制的文件，下载非常缓慢，用户选择可以手动下载，自行解压fabric和fabric-ca的包到fabric-simples的文件夹下，解压时两个包里相同的目录直接合并即可。最终会有两个目录<code>fabric-samples/bin</code>和<code>fabric-samples/config</code></p>
+<p>这样就可以跳过这一步命令的执行，具体的跳过方法可以看本文最后的说明。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># This will download the .tar.gz</span></span><br><span class="line"><span class="function"><span class="title">download</span></span>() &#123;</span><br><span class="line">    <span class="built_in">local</span> BINARY_FILE=<span class="variable">$1</span></span><br><span class="line">    <span class="built_in">local</span> URL=<span class="variable">$2</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;===&gt; Downloading: &quot;</span> <span class="string">&quot;<span class="variable">$&#123;URL&#125;</span>&quot;</span></span><br><span class="line">    curl -L --retry 5 --retry-delay 3 <span class="string">&quot;<span class="variable">$&#123;URL&#125;</span>&quot;</span> | tar xz || rc=$?</span><br><span class="line">    <span class="keyword">if</span> [ -n <span class="string">&quot;<span class="variable">$rc</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;==&gt; There was an error downloading the binary file.&quot;</span></span><br><span class="line">        <span class="built_in">return</span> 22</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;==&gt; Done.&quot;</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>pullBinaries()</code>的前半部分是下载解压fabric，后半部分是下载解压fabric-ca</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="title">pullBinaries</span></span>() &#123;</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;===&gt; Downloading version <span class="variable">$&#123;FABRIC_TAG&#125;</span> platform specific fabric binaries&quot;</span></span><br><span class="line">    download <span class="string">&quot;<span class="variable">$&#123;BINARY_FILE&#125;</span>&quot;</span> <span class="string">&quot;https://github.com/hyperledger/fabric/releases/download/v<span class="variable">$&#123;VERSION&#125;</span>/<span class="variable">$&#123;BINARY_FILE&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">if</span> [ $? -eq 22 ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;------&gt; <span class="variable">$&#123;FABRIC_TAG&#125;</span> platform specific fabric binary is not available to download &lt;----&quot;</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">exit</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;===&gt; Downloading version <span class="variable">$&#123;CA_TAG&#125;</span> platform specific fabric-ca-client binary&quot;</span></span><br><span class="line">    download <span class="string">&quot;<span class="variable">$&#123;CA_BINARY_FILE&#125;</span>&quot;</span> <span class="string">&quot;https://github.com/hyperledger/fabric-ca/releases/download/v<span class="variable">$&#123;CA_VERSION&#125;</span>/<span class="variable">$&#123;CA_BINARY_FILE&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">if</span> [ $? -eq 22 ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;------&gt; <span class="variable">$&#123;CA_TAG&#125;</span> fabric-ca-client binary is not available to download  (Available from 1.1.0-rc1) &lt;----&quot;</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">exit</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="第三部分：安装Fabric相关的Docker镜像："><a href="#第三部分：安装Fabric相关的Docker镜像：" class="headerlink" title="第三部分：安装Fabric相关的Docker镜像："></a>第三部分：安装Fabric相关的Docker镜像：</h2><p>这一步的速度取决于Docker的下载速度，如果过非常慢，可以考虑替换其它的Docker源，改善会比较明显。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">dockerPull</span></span>() &#123;</span><br><span class="line">    <span class="comment">#three_digit_image_tag is passed in, e.g. &quot;1.4.6&quot;</span></span><br><span class="line">    three_digit_image_tag=<span class="variable">$1</span></span><br><span class="line">    <span class="built_in">shift</span></span><br><span class="line">    <span class="comment">#two_digit_image_tag is derived, e.g. &quot;1.4&quot;, especially useful as a local tag for two digit references to most recent baseos, ccenv, javaenv, nodeenv patch releases</span></span><br><span class="line">    two_digit_image_tag=$(<span class="built_in">echo</span> <span class="variable">$three_digit_image_tag</span> | cut -d<span class="string">&#x27;.&#x27;</span> -f1,2)</span><br><span class="line">    <span class="keyword">while</span> [[ <span class="variable">$#</span> -gt 0 ]]</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">        image_name=<span class="string">&quot;<span class="variable">$1</span>&quot;</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;====&gt; hyperledger/fabric-<span class="variable">$image_name</span>:<span class="variable">$three_digit_image_tag</span>&quot;</span></span><br><span class="line">        docker pull <span class="string">&quot;hyperledger/fabric-<span class="variable">$image_name</span>:<span class="variable">$three_digit_image_tag</span>&quot;</span></span><br><span class="line">        docker tag <span class="string">&quot;hyperledger/fabric-<span class="variable">$image_name</span>:<span class="variable">$three_digit_image_tag</span>&quot;</span> <span class="string">&quot;hyperledger/fabric-<span class="variable">$image_name</span>&quot;</span></span><br><span class="line">        docker tag <span class="string">&quot;hyperledger/fabric-<span class="variable">$image_name</span>:<span class="variable">$three_digit_image_tag</span>&quot;</span> <span class="string">&quot;hyperledger/fabric-<span class="variable">$image_name</span>:<span class="variable">$two_digit_image_tag</span>&quot;</span></span><br><span class="line">        <span class="built_in">shift</span></span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">pullDockerImages</span></span>() &#123;</span><br><span class="line">    <span class="built_in">command</span> -v docker &gt;&amp; /dev/null</span><br><span class="line">    NODOCKER=$?</span><br><span class="line">    <span class="keyword">if</span> [ <span class="string">&quot;<span class="variable">$&#123;NODOCKER&#125;</span>&quot;</span> == 0 ]; <span class="keyword">then</span></span><br><span class="line">        FABRIC_IMAGES=(peer orderer ccenv tools)</span><br><span class="line">        <span class="keyword">case</span> <span class="string">&quot;<span class="variable">$VERSION</span>&quot;</span> <span class="keyword">in</span></span><br><span class="line">        1.*)</span><br><span class="line">            FABRIC_IMAGES+=(javaenv)</span><br><span class="line">            <span class="built_in">shift</span></span><br><span class="line">            ;;</span><br><span class="line">        2.*)</span><br><span class="line">            FABRIC_IMAGES+=(nodeenv baseos javaenv)</span><br><span class="line">            <span class="built_in">shift</span></span><br><span class="line">            ;;</span><br><span class="line">        <span class="keyword">esac</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;FABRIC_IMAGES:&quot;</span> <span class="string">&quot;<span class="variable">$&#123;FABRIC_IMAGES[@]&#125;</span>&quot;</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;===&gt; Pulling fabric Images&quot;</span></span><br><span class="line">        dockerPull <span class="string">&quot;<span class="variable">$&#123;FABRIC_TAG&#125;</span>&quot;</span> <span class="string">&quot;<span class="variable">$&#123;FABRIC_IMAGES[@]&#125;</span>&quot;</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;===&gt; Pulling fabric ca Image&quot;</span></span><br><span class="line">        CA_IMAGE=(ca)</span><br><span class="line">        dockerPull <span class="string">&quot;<span class="variable">$&#123;CA_TAG&#125;</span>&quot;</span> <span class="string">&quot;<span class="variable">$&#123;CA_IMAGE[@]&#125;</span>&quot;</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;===&gt; Pulling thirdparty docker images&quot;</span></span><br><span class="line">        THIRDPARTY_IMAGES=(zookeeper kafka couchdb)</span><br><span class="line">        dockerPull <span class="string">&quot;<span class="variable">$&#123;THIRDPARTY_TAG&#125;</span>&quot;</span> <span class="string">&quot;<span class="variable">$&#123;THIRDPARTY_IMAGES[@]&#125;</span>&quot;</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;===&gt; List out hyperledger docker images&quot;</span></span><br><span class="line">        docker images | grep hyperledger</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;=========================================================&quot;</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;Docker not installed, bypassing download of Fabric images&quot;</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;=========================================================&quot;</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<h1 id="说明：跳过某些安装部分的方法："><a href="#说明：跳过某些安装部分的方法：" class="headerlink" title="说明：跳过某些安装部分的方法："></a>说明：跳过某些安装部分的方法：</h1><p><strong>最开始，我进行了最为迷惑行为——注释/删除代码：</strong><br><em>通过注释下面的相应代码，可以实现部分安装：</em></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> [ <span class="string">&quot;<span class="variable">$SAMPLES</span>&quot;</span> == <span class="string">&quot;true&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;Clone hyperledger/fabric-samples repo&quot;</span></span><br><span class="line">    <span class="built_in">echo</span></span><br><span class="line">    cloneSamplesRepo</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">&quot;<span class="variable">$BINARIES</span>&quot;</span> == <span class="string">&quot;true&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;Pull Hyperledger Fabric binaries&quot;</span></span><br><span class="line">    <span class="built_in">echo</span></span><br><span class="line">   pullBinaries</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">&quot;<span class="variable">$DOCKER</span>&quot;</span> == <span class="string">&quot;true&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;Pull Hyperledger Fabric docker images&quot;</span></span><br><span class="line">    <span class="built_in">echo</span></span><br><span class="line">    pullDockerImages</span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
+<p><strong>但是！不推荐这样做！因为这样比较蠢！</strong></p>
+<p><strong>后来我醒悟了！！！可以先运行<code>./bootstrap.sh -h</code> 查看提示信息：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">printHelp</span></span>() &#123;</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;Usage: bootstrap.sh [version [ca_version [thirdparty_version]]] [options]&quot;</span></span><br><span class="line">    <span class="built_in">echo</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;options:&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;-h : this help&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;-d : bypass docker image download&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;-s : bypass fabric-samples repo clone&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;-b : bypass download of platform-specific binaries&quot;</span></span><br><span class="line">    <span class="built_in">echo</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;e.g. bootstrap.sh 2.1.0 1.4.6 0.4.18 -s&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;would download docker images and binaries for Fabric v2.1.0 and Fabric CA v1.4.6&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，我们可以通过后缀，跳过上面三个部分任意部分的安装，最开始看的不仔细，我是通过注释相应流程代码实现的跳过安装,实在是有些蠢 :D</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李明鑫
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2020/05/01/fabric_bootstrap.sh/" title="Fabric 搭建环境 bootstrap.sh做了哪些工作？">http://example.com/2020/05/01/fabric_bootstrap.sh/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Hyperledger/" rel="tag"># Hyperledger</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/12/01/start/" rel="prev" title="开始">
+      <i class="fa fa-chevron-left"></i> 开始
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#bootstrap-sh%E5%AE%89%E8%A3%85Hyperledger-Fabric-samples"><span class="nav-number">1.</span> <span class="nav-text">bootstrap.sh安装Hyperledger Fabric-samples</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E5%AE%89%E8%A3%85%E9%83%A8%E5%88%86%EF%BC%9A"><span class="nav-number">2.</span> <span class="nav-text">主要安装部分：</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86%EF%BC%8C%E4%B8%8B%E8%BD%BDfabric-samples%E7%9A%84%E4%BB%93%E5%BA%93%EF%BC%9A"><span class="nav-number">2.1.</span> <span class="nav-text">第一部分，下载fabric-samples的仓库：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86%EF%BC%8C%E4%B8%8B%E8%BD%BD%E5%B9%B6%E5%AE%89%E8%A3%85%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC%E7%9A%84fabric%E5%92%8Cfabric-ca%E7%9A%84%E4%BA%8C%E8%BF%9B%E5%88%B6%E6%96%87%E4%BB%B6"><span class="nav-number">2.2.</span> <span class="nav-text">第二部分，下载并安装最新版本的fabric和fabric-ca的二进制文件:</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E9%83%A8%E5%88%86%EF%BC%9A%E5%AE%89%E8%A3%85Fabric%E7%9B%B8%E5%85%B3%E7%9A%84Docker%E9%95%9C%E5%83%8F%EF%BC%9A"><span class="nav-number">2.3.</span> <span class="nav-text">第三部分：安装Fabric相关的Docker镜像：</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%B4%E6%98%8E%EF%BC%9A%E8%B7%B3%E8%BF%87%E6%9F%90%E4%BA%9B%E5%AE%89%E8%A3%85%E9%83%A8%E5%88%86%E7%9A%84%E6%96%B9%E6%B3%95%EF%BC%9A"><span class="nav-number">3.</span> <span class="nav-text">说明：跳过某些安装部分的方法：</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李明鑫"
+      src="/images/fox.png">
+  <p class="site-author-name" itemprop="name">李明鑫</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/chasecheese" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;chasecheese" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:limingxincube@gmail.com" title="E-Mail → mailto:limingxincube@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i></a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fas fa-pencil-alt"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李明鑫</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/valine@1/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : true,
+      appId      : 'shdkrwayVW8oFb0FO2VXtGVX-MdYXbMMI',
+      appKey     : 'rLfWUgLzoAai39GdHErOL94X',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : true,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
